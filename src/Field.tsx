@@ -1,4 +1,6 @@
 import { useCallback, useState } from 'react'
+import PublicCard from './PublicCard'
+import PrivateCard from './PrivateCard'
 
 const aspectRatio = '1/1'
 
@@ -348,42 +350,3 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
 }
 
 export default Field
-
-const PublicCard = (props: { card: CardType, isSelected: boolean, setSelectedCards: () => void, }) => {
-  const { card, isSelected, setSelectedCards, } = props
-
-  return (
-    <img
-      onClick={setSelectedCards}
-      style={{
-        width: '100%',
-        mixBlendMode: isSelected ? 'multiply' : undefined,
-        backgroundColor: isSelected ? 'gray' : undefined,
-        aspectRatio: aspectRatio,
-        objectFit: 'cover',
-        objectPosition: 'top',
-      }}
-      alt={card.image}
-      src={card.image}
-    />
-  )
-}
-
-const PrivateCard = (props: { children: string, isSelected: boolean, setSelectedCards: () => void, }) => {
-  const { children, isSelected, setSelectedCards, } = props
-
-  return (
-    <div
-      onClick={setSelectedCards}
-      style={{
-        width: '100%',
-        mixBlendMode: isSelected ? 'multiply' : undefined,
-        backgroundColor: isSelected ? 'gray' : undefined,
-        aspectRatio: aspectRatio,
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-      }}
-      children={children} />
-  )
-}

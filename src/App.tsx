@@ -50,13 +50,13 @@ const App = () => {
 
         const handZone = current.find((zone) => zone.player === player && zone.name === '手札')
         handZone && Array(5).fill(true).forEach(() => {
-          const card = deckZone.cards.pop()
+          const card = deckZone.cards.shift()
           card && handZone.cards.push(card)
         })
 
         const sheildZone = current.find((zone) => zone.player === player && zone.name === '盾')
         sheildZone && Array(5).fill(true).forEach(() => {
-          const card = deckZone.cards.pop()
+          const card = deckZone.cards.shift()
           card && sheildZone.cards.push(card)
         })
       }
@@ -132,9 +132,12 @@ const App = () => {
         </div>
 
         <div style={{ textAlign: 'center' }}>
-          <button className='border border-blue-500 rounded m-1 p-1' disabled={player === null} onClick={connectWebSocket}>
-            接続
-          </button>
+          <button
+            className='border border-blue-500 rounded m-1 p-1'
+            disabled={player === null}
+            onClick={connectWebSocket}
+            children={<> 接続 </>}
+          />
         </div>
       </>
     )
@@ -168,7 +171,7 @@ const App = () => {
               const targetZone = zones.find((zone) => zone.player === player && zone.name === name)
               if (deckZone && targetZone) {
                 setZones((current) => {
-                  const card = deckZone.cards.pop()
+                  const card = deckZone.cards.shift()
                   card && targetZone.cards.push(card)
                   syncData(zones)
                   return [...current]
@@ -201,8 +204,13 @@ const App = () => {
       <div style={{ border: 'thin solid black', borderRadius: '4px', }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', }}>
           {zones.map((zone) => {
-
             const onClick = () => {
+              setZones((current) => {
+                const targetZone = current.find((c) => c === zone)
+                if (targetZone)
+                  targetZone.cards = shuffleArray(zone.cards)
+                return [...current]
+              })
             }
 
             return (
@@ -210,7 +218,7 @@ const App = () => {
                 className='border border-blue-500 rounded m-1 p-1'
                 key={zone.player + zone.name}
                 onClick={onClick}
-                children={<> シャッフル: {zone.player}の{zone.name} </>}
+                children={<> {zone.player}の{zone.name}をシャッフル </>}
               />
             )
           })}
