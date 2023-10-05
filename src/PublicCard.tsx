@@ -1,4 +1,4 @@
-const aspectRatio = '1/1'
+export const aspectRatio = '63/88'
 
 const PublicCard = (props: { card: CardType, isSelected: boolean, setSelectedCards: () => void, }) => {
   const { card, isSelected, setSelectedCards, } = props
@@ -11,6 +11,7 @@ const PublicCard = (props: { card: CardType, isSelected: boolean, setSelectedCar
         mixBlendMode: isSelected ? 'multiply' : undefined,
         backgroundColor: isSelected ? 'gray' : undefined,
         aspectRatio: aspectRatio,
+        rotate: card.isTap ? '90deg' : undefined,
         objectFit: 'cover',
         objectPosition: 'top',
       }}

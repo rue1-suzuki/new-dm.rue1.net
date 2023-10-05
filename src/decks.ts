@@ -1,4 +1,4 @@
-export const deck: CardType[] = [
+const deck: CardType[] = [
   { uuid: '01', image: 'https://file.rue1.net/images/dm23ex1-005.jpg', isPublic: false, isTap: false, },
   { uuid: '02', image: 'https://file.rue1.net/images/dm23ex1-005.jpg', isPublic: false, isTap: false, },
   { uuid: '03', image: 'https://file.rue1.net/images/dm23ex1-005.jpg', isPublic: false, isTap: false, },
@@ -40,3 +40,5 @@ export const deck: CardType[] = [
   { uuid: '39', image: 'https://file.rue1.net/images/dmex17-020a.jpg', isPublic: false, isTap: false, },
   { uuid: '40', image: 'https://file.rue1.net/images/dmex17-Cho29.jpg', isPublic: false, isTap: false, },
 ]
+
+export default deck

@@ -1,25 +1,76 @@
 import { useCallback, useState } from 'react'
-import PublicCard from './PublicCard'
 import PrivateCard from './PrivateCard'
+import PublicCard, { aspectRatio } from './PublicCard'
 
-const aspectRatio = '1/1'
+const widthCardCount = 10
 
-const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCards: CardType[], targetZone: ZoneType,) => void, }) => {
-  const { zones, isPlayer, } = props
+type propsType = {
+  zones: ZoneType[],
+  isPlayer: boolean,
+  moveCards: (targetZone: ZoneType) => void,
+  selectedCards: CardType[],
+  setSelectedCards: React.Dispatch<React.SetStateAction<CardType[]>>,
+}
 
-  const [selectedCards, setSelectedCards] = useState<CardType[]>([])
+const Field = (props: propsType) => {
+  const { zones, isPlayer, selectedCards, setSelectedCards, } = props
 
-  const moveCards = useCallback((targetZoneName: string,) => {
+  const [isDeck, setIsDeck] = useState<boolean>(false)
+  const [isGrave, setIsGrave] = useState<boolean>(false)
+
+  const moveCards = useCallback((targetZoneName: string) => {
     const targetZone = zones.find((zone) => zone.name === targetZoneName)
-    targetZone && props.moveCards(selectedCards, targetZone)
-    setSelectedCards([])
-  }, [zones, selectedCards, props,])
+    targetZone && props.moveCards(targetZone)
+  }, [zones, props,])
+
+  if (isGrave || isDeck) {
+    const zoneName = isGrave ? '墓地' : isDeck ? '山札' : undefined
+
+    return (
+      <div className={isPlayer ? 'bg-blue-100' : 'bg-red-100'}>
+        <div style={{ paddingTop: '0.25rem', paddingBottom: '0.25rem', }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'left', alignItems: 'center', }}>
+            <div style={{ width: `${100 / widthCardCount}%` }}>
+              <div style={{ textAlign: 'center', }}>
+                <button
+                  style={{ width: '100%', aspectRatio: aspectRatio, }}
+                  type='button'
+                  onClick={() => {
+                    setIsGrave(false)
+                    setIsDeck(false)
+                  }}
+                  children={<> 閉じる </>}
+                />
+              </div>
+            </div>
+            {zones.find((zone) => zone.name === zoneName)?.cards.map((card) => {
+              return (
+                <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
+                  <PublicCard
+                    card={card}
+                    isSelected={selectedCards.includes(card)}
+                    setSelectedCards={() => {
+                      setSelectedCards((current) => {
+                        if (current.includes(card))
+                          return current.filter((c) => c !== card)
+                        return [...current, card]
+                      })
+                    }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={isPlayer ? 'bg-blue-100' : 'bg-red-100'}>
       <div style={{ paddingTop: '0.25rem', paddingBottom: '0.25rem', }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'left', alignItems: 'center', }}>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -38,7 +89,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           </div>
           {zones.find((zone) => zone.name === 'BZ')?.cards.map((card) => {
             return (
-              <div style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+              <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PublicCard
                   card={card}
                   isSelected={selectedCards.includes(card)}
@@ -53,12 +104,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
               </div>
             )
           })}
-        </div>
-      </div>
-
-      <div style={{ paddingTop: '0.25rem', paddingBottom: '0.25rem', }}>
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'left', alignItems: 'center', }}>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -77,7 +123,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           </div>
           {zones.find((zone) => zone.name === '保留')?.cards.map((card, index) => {
             return (
-              <div style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+              <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PublicCard
                   card={card}
                   isSelected={selectedCards.includes(card)}
@@ -92,7 +138,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
               </div>
             )
           })}
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -112,7 +158,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           {zones.find((zone) => zone.name === 'オモテ')?.cards.map((card, index) => {
             if (isPlayer)
               return (
-                <div style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+                <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                   <PublicCard
                     card={card}
                     isSelected={selectedCards.includes(card)}
@@ -127,7 +173,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
                 </div>
               )
             return (
-              <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+              <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PrivateCard
                   children={`オモテ${index + 1}`}
                   isSelected={selectedCards.includes(card)}
@@ -142,7 +188,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
               </div>
             )
           })}
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -161,7 +207,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           </div>
           {zones.find((zone) => zone.name === 'ウラ')?.cards.map((card, index) => {
             return (
-              <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+              <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PrivateCard
                   children={`ウラ${index + 1}`}
                   isSelected={selectedCards.includes(card)}
@@ -178,16 +224,18 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           })}
         </div>
       </div>
-
       <div style={{ paddingTop: '0.25rem', paddingBottom: '0.25rem', }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', }}>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
                 type='button'
                 onClick={() => {
-                  moveCards('山札')
+                  if (selectedCards.length === 0)
+                    setIsDeck(true)
+                  else
+                    moveCards('山札')
                 }}
                 children={
                   <>
@@ -198,13 +246,16 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
               />
             </div>
           </div>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
                 type='button'
                 onClick={() => {
-                  moveCards('墓地')
+                  if (selectedCards.length === 0)
+                    setIsGrave(true)
+                  else
+                    moveCards('墓地')
                 }}
                 children={
                   <>
@@ -215,7 +266,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
               />
             </div>
           </div>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -234,7 +285,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           </div>
           {zones.find((zone) => zone.name === '盾')?.cards.map((card, index) => {
             return (
-              <div className='bg-gray-200' style={{ justifySelf: 'left', textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+              <div className='bg-gray-200' style={{ justifySelf: 'left', textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PrivateCard
                   children={`盾${index + 1}`}
                   isSelected={selectedCards.includes(card)}
@@ -251,10 +302,9 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           })}
         </div>
       </div>
-
       <div style={{ paddingTop: '0.25rem', paddingBottom: '0.25rem', }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'left', alignItems: 'center', }}>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -273,7 +323,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           </div>
           {zones.find((zone) => zone.name === 'マナ')?.cards.map((card) => {
             return (
-              <div style={{ textAlign: 'center', width: `${100 / 10}%`, rotate: '180deg', }} key={card.uuid}>
+              <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, rotate: '180deg', }} key={card.uuid}>
                 <PublicCard
                   card={card}
                   isSelected={selectedCards.includes(card)}
@@ -290,10 +340,9 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           })}
         </div>
       </div>
-
       <div style={{ paddingTop: '0.25rem', paddingBottom: '0.25rem', }}>
         <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'left', alignItems: 'center', }}>
-          <div style={{ width: `${100 / 10}%` }}>
+          <div style={{ width: `${100 / widthCardCount}%` }}>
             <div style={{ textAlign: 'center', }}>
               <button
                 style={{ width: '100%', aspectRatio: aspectRatio, }}
@@ -313,7 +362,7 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
           {zones.find((zone) => zone.name === '手札')?.cards.map((card, index) => {
             if (isPlayer)
               return (
-                <div style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+                <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                   <PublicCard
                     card={card}
                     isSelected={selectedCards.includes(card)}
@@ -327,8 +376,9 @@ const Field = (props: { zones: ZoneType[], isPlayer: boolean, moveCards: (moveCa
                   />
                 </div>
               )
+
             return (
-              <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / 10}%`, }} key={card.uuid}>
+              <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PrivateCard
                   children={`手札${index + 1}`}
                   isSelected={selectedCards.includes(card)}
