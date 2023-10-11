@@ -156,7 +156,7 @@ const Field = (props: propsType) => {
             </div>
           </div>
           {zones.find((zone) => zone.name === 'オモテ')?.cards.map((card, index) => {
-            if (isPlayer)
+            if (isPlayer || card.isPublic)
               return (
                 <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                   <PublicCard
@@ -206,6 +206,22 @@ const Field = (props: propsType) => {
             </div>
           </div>
           {zones.find((zone) => zone.name === 'ウラ')?.cards.map((card, index) => {
+            if (card.isPublic)
+              return (
+                <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
+                  <PublicCard
+                    card={card}
+                    isSelected={selectedCards.includes(card)}
+                    setSelectedCards={() => {
+                      setSelectedCards((current) => {
+                        if (current.includes(card))
+                          return current.filter((c) => c !== card)
+                        return [...current, card]
+                      })
+                    }}
+                  />
+                </div>
+              )
             return (
               <div className='bg-gray-200' style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PrivateCard
@@ -284,6 +300,22 @@ const Field = (props: propsType) => {
             </div>
           </div>
           {zones.find((zone) => zone.name === '盾')?.cards.map((card, index) => {
+            if (card.isPublic)
+              return (
+                <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
+                  <PublicCard
+                    card={card}
+                    isSelected={selectedCards.includes(card)}
+                    setSelectedCards={() => {
+                      setSelectedCards((current) => {
+                        if (current.includes(card))
+                          return current.filter((c) => c !== card)
+                        return [...current, card]
+                      })
+                    }}
+                  />
+                </div>
+              )
             return (
               <div className='bg-gray-200' style={{ justifySelf: 'left', textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                 <PrivateCard
@@ -360,7 +392,7 @@ const Field = (props: propsType) => {
             </div>
           </div>
           {zones.find((zone) => zone.name === '手札')?.cards.map((card, index) => {
-            if (isPlayer)
+            if (isPlayer || card.isPublic)
               return (
                 <div style={{ textAlign: 'center', width: `${100 / widthCardCount}%`, }} key={card.uuid}>
                   <PublicCard

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { v4 } from 'uuid'
 import Field from './Field'
-import deck from './decks'
 import shuffleArray from './shuffle'
 
 const zoneNames = [
@@ -15,23 +15,14 @@ const zoneNames = [
   'ウラ',
 ]
 
-const App = () => {
+const Games = () => {
   const [websocket, setWebsocket] = useState<WebSocket | null>(null)
 
   const [rooms, setRooms] = useState<string[] | null>(null)
   const [roomId, setRoomId] = useState<string | null>(null)
   const [player, setPlayer] = useState<string | null>(null)
+  const [selectedDeck, setSelectedDeck] = useState<{ image: string, count: number, }[] | null>(null)
   const [zones, setZones] = useState<ZoneType[]>(() => {
-    const stringZones = window.localStorage.getItem('zones')
-    if (stringZones && window.confirm('前回の盤面を復元しますか？'))
-      try {
-        return JSON.parse(stringZones)
-      }
-      catch (error) {
-        console.error(error)
-      }
-
-    window.localStorage.removeItem('zones')
     return ['プレイヤー1', 'プレイヤー2',].map((playerName) => {
       return zoneNames.map((zoneName) => {
         return {
@@ -45,9 +36,18 @@ const App = () => {
   })
   const [selectedCards, setSelectedCards] = useState<CardType[]>([])
 
-  useEffect(() => {
-    window.localStorage.setItem('zones', JSON.stringify(zones))
-  }, [zones])
+  const deckItems: { name: string, deck: { image: string, count: number, } }[] = useMemo(() => {
+    const key = 'deckItems'
+    try {
+      const string = window.localStorage.getItem(key)
+      if (string)
+        return JSON.parse(string)
+    }
+    catch {
+      window.localStorage.removeItem(key)
+    }
+    return []
+  }, [])
 
   useEffect(() => {
     const url = 'https://uvicorn-ei5avx3iya-an.a.run.app/rooms/'
@@ -70,6 +70,8 @@ const App = () => {
   }, [websocket])
 
   const init = useCallback(() => {
+    if (selectedDeck === null)
+      return
     if (window.confirm('初期化しますか？') === false)
       return
 
@@ -77,7 +79,7 @@ const App = () => {
       current.filter((zone) => zone.player === player).forEach((zone) => zone.cards = [])
       const deckZone = current.find((zone) => zone.player === player && zone.name === '山札')
       if (deckZone) {
-        deckZone.cards = shuffleArray(deck)
+        deckZone.cards = [...shuffleArray(createDeck(selectedDeck))]
 
         const handZone = current.find((zone) => zone.player === player && zone.name === '手札')
         handZone && Array(5).fill(true).forEach(() => {
@@ -94,20 +96,20 @@ const App = () => {
       syncData(current)
       return [...current]
     })
-  }, [player, syncData,])
+  }, [player, syncData, selectedDeck,])
 
   const moveCards = useCallback((targetZone: ZoneType, isTop?: boolean) => {
     setZones((current) => {
       selectedCards.forEach((selectedCard) => {
         const sourceZone = current.find((zone) => zone.player === targetZone.player && zone.cards.includes(selectedCard))
-        if (sourceZone) {
+        if (sourceZone)
           sourceZone.cards = sourceZone.cards.filter((card) => card.uuid !== selectedCard.uuid)
-          if (isTop)
-            targetZone.cards = [...selectedCards, ...targetZone.cards]
-          else
-            targetZone.cards.push(selectedCard)
-        }
       })
+
+      targetZone.cards = isTop
+        ? [...selectedCards, ...targetZone.cards,]
+        : [...targetZone.cards, ...selectedCards,]
+
       syncData(current)
       return [...current]
     })
@@ -201,66 +203,76 @@ const App = () => {
   return (
     <>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', }}>
-        <h1> ルームID: {roomId} </h1>
-        <div style={{ textAlign: 'center' }}>
-          <select
-            value={player ? player : ''}
-            onChange={((event) => {
-              setPlayer(event.target.value ? event.target.value : null)
-            })}
-            children={
-              <>
-                <option
-                  value=''
-                  children={<> プレイヤーを選択 </>}
-                />
-                {Array.from(new Set(zones.map((zone) => zone.player))).map((zonePlayer) => {
-                  return (
-                    <option
-                      key={zonePlayer}
-                      value={zonePlayer}
-                      children={zonePlayer}
-                    />
-                  )
-                })}
-              </>
+        <select
+          value={player ? player : ''}
+          onChange={((event) => {
+            setPlayer(event.target.value ? event.target.value : null)
+          })}
+          children={
+            <>
+              <option
+                value=''
+                children={<> プレイヤーを選択 </>}
+              />
+              {Array.from(new Set(zones.map((zone) => zone.player))).map((zonePlayer) => {
+                return (
+                  <option
+                    key={zonePlayer}
+                    value={zonePlayer}
+                    children={zonePlayer}
+                  />
+                )
+              })}
+            </>
+          }
+        />
+        <select
+          value={selectedCards ? JSON.stringify(selectedDeck) : ''}
+          onChange={((event) => {
+            try {
+              setSelectedDeck(JSON.parse(event.target.value))
             }
-          />
-        </div>
-        <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', }}>
-          <button
-            className='border border-blue-500 rounded m-1 p-1'
-            onClick={() => {
-              syncData(zones)
-            }}
-            children={<> 同期 </>}
-          />
-          <button
-            className='border border-blue-500 rounded m-1 p-1'
-            onClick={init}
-            children={<> 最初から </>}
-          />
-        </div>
+            catch (error) {
+              setSelectedDeck(null)
+            }
+          })}
+          children={
+            <>
+              <option
+                value=''
+                children={<> デッキを選択 </>}
+              />
+              {deckItems.map((deckItem) => {
+                return (
+                  <option
+                    key={deckItem.name}
+                    value={JSON.stringify(deckItem.deck)}
+                    children={deckItem.name}
+                  />
+                )
+              })}
+            </>
+          }
+        />
+        <button
+          className='border border-blue-500 rounded m-1 p-1'
+          onClick={init}
+          children={<> 最初から </>}
+        />
       </div>
 
       {player &&
         <>
-          <div style={{ display: 'flex', flexWrap: 'wrap', }} >
-            {Array.from(new Set(zones.map((zone) => zone.player))).filter((zonePlayer) => zonePlayer !== player).map((zonePlayer, _, zonePlayers) => {
-              return (
-                <div style={{ width: `${100 / zonePlayers.length}%`, border: 'thin solid black', borderRadius: '4px', }} key={zonePlayer}>
-                  <div style={{ rotate: '180deg' }}>
-                    <Field
-                      zones={zones.filter((zone) => zone.player === zonePlayer)}
-                      moveCards={moveCards}
-                      isPlayer={false}
-                      selectedCards={selectedCards}
-                      setSelectedCards={setSelectedCards}
-                    />
-                  </div>
-                </div>
-              )
-            })}
+          <div style={{ border: 'thin solid black', borderRadius: '4px', }}>
+            <div style={{ rotate: '180deg' }}>
+              <Field
+                zones={zones.filter((zone) => zone.player !== player)}
+                moveCards={moveCards}
+                isPlayer={false}
+                selectedCards={selectedCards}
+                setSelectedCards={setSelectedCards}
+              />
+            </div>
           </div>
 
           <div style={{ border: 'thin solid black', borderRadius: '4px', }}>
@@ -289,6 +301,8 @@ const App = () => {
                   />
                 )
               })}
+            </div>
+            <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', }}>
               <button
                 className='border border-blue-500 rounded m-1 p-1'
                 onClick={() => {
@@ -301,6 +315,24 @@ const App = () => {
                   alert('シャッフルしました。')
                 }}
                 children={<> シャッフル </>}
+              />
+              <button
+                className='border border-blue-500 rounded m-1 p-1'
+                type='button'
+                onClick={() => {
+                  const zone = zones.find((zone) => zone.player === player && zone.name === '山札')
+                  zone && moveCards(zone)
+                }}
+                children={<> 山札下へ </>}
+              />
+              <button
+                className='border border-blue-500 rounded m-1 p-1'
+                type='button'
+                onClick={() => {
+                  const zone = zones.find((zone) => zone.player === player && zone.name === '山札')
+                  zone && moveCards(zone, true)
+                }}
+                children={<> 山札上へ </>}
               />
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-around', alignItems: 'center', }}>
@@ -336,19 +368,21 @@ const App = () => {
                 className='border border-blue-500 rounded m-1 p-1'
                 type='button'
                 onClick={() => {
-                  const zone = zones.find((zone) => zone.player === player && zone.name === '山札')
-                  zone && moveCards(zone)
+                  const sourceZone = zones.find((zone) => zone.player !== player && zone.name === '手札')
+                  const targetZone = zones.find((zone) => zone.player !== player && zone.name === '墓地')
+                  if (sourceZone && targetZone && sourceZone.cards.length > 0) {
+                    const index = Math.floor(sourceZone.cards.length * Math.random())
+                    const sourceCard = sourceZone.cards[index]
+
+                    setZones((current) => {
+                      sourceZone.cards = sourceZone.cards.filter((card) => card.uuid !== sourceCard.uuid)
+                      targetZone.cards = [...targetZone.cards, sourceCard,]
+                      syncData(current)
+                      return [...current]
+                    })
+                  }
                 }}
-                children={<> 山札下へ </>}
-              />
-              <button
-                className='border border-blue-500 rounded m-1 p-1'
-                type='button'
-                onClick={() => {
-                  const zone = zones.find((zone) => zone.player === player && zone.name === '山札')
-                  zone && moveCards(zone, true)
-                }}
-                children={<> 山札上へ </>}
+                children={<> ランハン </>}
               />
             </div>
           </div>
@@ -366,8 +400,36 @@ const App = () => {
           </div>
         </>
       }
+
+      <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', }}>
+        <div>
+          ルームID: {roomId}
+        </div>
+        <button
+          className='border border-blue-500 rounded m-1 p-1'
+          onClick={() => {
+            syncData(zones)
+          }}
+          children={<> 同期 </>}
+        />
+      </div>
     </>
   )
 }
 
-export default App
+export default Games
+
+const createDeck = (deckJson: { image: string, count: number, }[]): CardType[] => {
+  const deck: CardType[] = []
+  deckJson.forEach(({ image, count, }) => {
+    Array(count).fill(true).forEach(() => {
+      deck.push({
+        uuid: v4(),
+        image: image,
+        isPublic: false,
+        isTap: false,
+      })
+    })
+  })
+  return deck
+}
